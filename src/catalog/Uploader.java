@@ -75,10 +75,13 @@ public class Uploader {
 
     // waiting until the vapptemplate gets resolved.
     while (!vtmpl.getResource().isOvfDescriptorUploaded()) {
+      vtmpl = VappTemplate.getVappTemplateByReference(vcloudClient, vtmpl.getReference());
       System.out.println("Verifying if ovfFile is uploaded...");
       Thread.sleep(500);
     }
-
+    
+    System.out.println("finished uploading ovfFile");
+    
     vtmpl.uploadFile(vmdkFilename, vmdkStream, vmdkStream.available());
 
     // waiting until the vapptemplate gets resolved.
