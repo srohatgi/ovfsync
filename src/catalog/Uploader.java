@@ -75,7 +75,7 @@ public class Uploader {
 
     // waiting until the vapptemplate gets resolved.
     while (!vtmpl.getResource().isOvfDescriptorUploaded()) {
-      System.out.println("Verifying if ovfFile is uploaded..");
+      System.out.println("Verifying if ovfFile is uploaded...");
       Thread.sleep(500);
     }
 
@@ -83,7 +83,7 @@ public class Uploader {
 
     // waiting until the vapptemplate gets resolved.
     while (vtmpl.getResource().getStatus() != 8) {
-      System.out.println("Verifying if vmdkFile is uploaded..");
+      System.out.println("Verifying if vmdkFile is uploaded...");
       Thread.sleep(500);
     }
 
@@ -202,6 +202,8 @@ public class Uploader {
         String ovfLoc = vals[1];
         String vmdkLoc = vals[2];
         String desc = vals[3];
+
+        System.out.println("tmpl name:"+name+" ovfLoc:"+ovfLoc+" vmdkLoc:"+vmdkLoc+" desc:"+desc);
 
         InputStream ovfStream = null, vmdkStream = null;
         
