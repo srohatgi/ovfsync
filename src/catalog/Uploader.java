@@ -279,7 +279,7 @@ public class Uploader {
     VcloudClient vcloudClient = new VcloudClient(vCloudUrl, Version.V5_1);
 
     // change log levels if needed.
-    VcloudClient.setLogLevel(Level.ALL);
+    VcloudClient.setLogLevel(Level.WARNING);
     vcloudClient.registerScheme("https", 443, FakeSSLSocketFactory.getInstance());
     //System.out.println("---------" + username + password);
 
