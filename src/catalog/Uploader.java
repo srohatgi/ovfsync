@@ -36,7 +36,9 @@ import edu.princeton.cs.introcs.StdIn;
 public class Uploader {
 
   private VcloudClient vcloudClient;
-  private static Vdc vdc;
+  private Vdc vdc;
+  private Organization org;
+  private Object catalogRef;
   
   public Uploader(VcloudClient vcloudClient) {
     this.vcloudClient = vcloudClient;
@@ -97,8 +99,7 @@ public class Uploader {
    * @param vAppTemplateName
    * @throws VCloudException
    */
-  private void addVappTemplateToCatalog(ReferenceType catalogRef,
-      VappTemplate tmpl, String name, String desc) throws VCloudException {
+  public void addVappTemplateToCatalog(VappTemplate tmpl, String name, String desc) throws VCloudException {
 
     if (catalogRef == null) {
       throw new RuntimeException("catalogRef is null");
@@ -108,7 +109,7 @@ public class Uploader {
     catalogItemType.setName(name);
     catalogItemType.setDescription(desc);
     catalogItemType.setEntity(tmpl.getReference());
-    Catalog catalog = Catalog.getCatalogByReference(vcloudClient, catalogRef);
+    Catalog catalog = Catalog.getCatalogByReference(vcloudClient, (ReferenceType) catalogRef);
     catalog.addCatalogItem(catalogItemType);
   }
 
@@ -196,21 +197,23 @@ public class Uploader {
       
       Uploader u = new Uploader(vc);
       
-      ReferenceType catalogRef = u.setupVCloudParams(orgName, vdcName, catalogName);
+      u.setupVCloudParams(orgName, vdcName, catalogName);
 
       // upload vapptemplate
       while (StdIn.hasNextLine()) {
-        String name = StdIn.readString();
-        String ovfLoc = StdIn.readString();
-        String vmdkLoc = StdIn.readString();
-        String desc = StdIn.readString();
+        String[] vals = StdIn.readLine().split(" ");
+        String name = vals[0];
+        String ovfLoc = vals[1];
+        String vmdkLoc = vals[2];
+        String desc = vals[3];
+
         InputStream ovfStream = null, vmdkStream = null;
         
         try {
           ovfStream = new FileInputStream(new File(ovfLoc));
           vmdkStream = new FileInputStream(new File(vmdkLoc));
           VappTemplate vtmpl = u.uploadVappTemplate(name, desc, vmdkLoc, ovfStream, vmdkStream);
-          u.addVappTemplateToCatalog(catalogRef, vtmpl, name, desc);        
+          u.addVappTemplateToCatalog(vtmpl, name, desc);        
         } finally {
           if (ovfStream!=null)
             ovfStream.close();
@@ -242,15 +245,15 @@ public class Uploader {
      */
   }
 
-  private ReferenceType setupVCloudParams(String orgName, String vdcName,
+  private void setupVCloudParams(String orgName, String vdcName,
       String catalogName) throws KeyManagementException,
       UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException {
-    ReferenceType catalogRef = null;
+    catalogRef = null;
 
     try {
 
       // find org
-      Organization org = Organization.getOrganizationByReference(vcloudClient,
+      org = Organization.getOrganizationByReference(vcloudClient,
           vcloudClient.getOrgRefByName(orgName));
       System.out.println("Organization :: " + org.getReference().getName());
   
@@ -258,7 +261,7 @@ public class Uploader {
       vdc = Vdc.getVdcByReference(vcloudClient, org.getVdcRefByName(vdcName));
       System.out.println("Vdc :: " + vdc.getReference().getName());
   
-      // add to catalog
+      // find catalog
       for (ReferenceType reference : org.getCatalogRefs()) {
         if (reference.getName().equals(catalogName)) {
           catalogRef = reference;
@@ -270,7 +273,6 @@ public class Uploader {
       System.err.println("Error communicating:" + vcex.getMessage());
       System.exit(1);
     }
-    return catalogRef;
   }
 
   public static VcloudClient buildVCloudClient(String vCloudUrl, String username,
