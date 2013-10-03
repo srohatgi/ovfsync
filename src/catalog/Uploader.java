@@ -85,14 +85,16 @@ public class Uploader {
     System.out.println("FINISHED upload ovfFile");
     
     
+    System.out.println("STARTING to upload vmdkFile");
     vtmpl.uploadFile(vmdkFilename, vmdkStream, vmdkStream.available());
 
     // waiting until the vapptemplate gets resolved.
     while (vtmpl.getResource().getStatus() != 8) {
       vtmpl = VappTemplate.getVappTemplateByReference(vcloudClient, vtmpl.getReference());
-      System.out.println("Verifying if vmdkFile is uploaded...");
+      System.out.println("  verifying if vmdkFile is uploaded...");
       Thread.sleep(500);
     }
+    System.out.println("FINISHED upload vmdkFile");
 
     return vtmpl;
 
@@ -189,11 +191,12 @@ public class Uploader {
     String vdcName = args[4];
     String catalogName = args[5];
 
-    // testing args
+    /* testing args
     vCloudUrl = "https://uklo1.symphonycloud.savvis.com";
     orgName = "Symphony1";
     vdcName = "SS_DEMO_6_UK";
     catalogName = "wp";
+    */
     
     try {
       VcloudClient vc = buildVCloudClient(vCloudUrl, username, password);
