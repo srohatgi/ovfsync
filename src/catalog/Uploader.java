@@ -188,9 +188,6 @@ public class Uploader {
     orgName = "Symphony1";
     vdcName = "SS_DEMO_6_UK";
     catalogName = "wp";
-
-    System.out.println("Blank VM's Sample");
-    System.out.println("-----------------");
     
     try {
       VcloudClient vc = buildVCloudClient(vCloudUrl, username, password);
