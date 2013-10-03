@@ -74,13 +74,16 @@ public class Uploader {
         vtmpl.getReference());
 
     // waiting until the vapptemplate gets resolved.
+    System.out.println("STARTING to upload ovfFile");
+    
     while (!vtmpl.getResource().isOvfDescriptorUploaded()) {
       vtmpl = VappTemplate.getVappTemplateByReference(vcloudClient, vtmpl.getReference());
-      System.out.println("Verifying if ovfFile is uploaded...");
+      System.out.println("  verifying if ovfFile is uploaded...");
       Thread.sleep(500);
     }
     
-    System.out.println("finished uploading ovfFile");
+    System.out.println("FINISHED upload ovfFile");
+    
     
     vtmpl.uploadFile(vmdkFilename, vmdkStream, vmdkStream.available());
 
@@ -205,15 +208,17 @@ public class Uploader {
         String ovfLoc = vals[1];
         String vmdkLoc = vals[2];
         String desc = vals[3];
+        String vmdkFileName = vmdkLoc.substring(vmdkLoc.lastIndexOf("/")+1);
 
-        System.out.println("tmpl name:"+name+" ovfLoc:"+ovfLoc+" vmdkLoc:"+vmdkLoc+" desc:"+desc);
+        System.out.println("tmpl name:"+name+" ovfLoc:"+ovfLoc+" vmdkLoc:"+vmdkLoc+" vmdkFileName:"+vmdkFileName+" desc:"+desc);
 
         InputStream ovfStream = null, vmdkStream = null;
         
         try {
           ovfStream = new FileInputStream(new File(ovfLoc));
           vmdkStream = new FileInputStream(new File(vmdkLoc));
-          VappTemplate vtmpl = u.uploadVappTemplate(name, desc, vmdkLoc, ovfStream, vmdkStream);
+          VappTemplate vtmpl = u.uploadVappTemplate(name, desc, 
+        		  vmdkFileName, ovfStream, vmdkStream);
           u.addVappTemplateToCatalog(vtmpl, name, desc);        
         } finally {
           if (ovfStream!=null)
