@@ -89,6 +89,7 @@ public class Uploader {
 
     // waiting until the vapptemplate gets resolved.
     while (vtmpl.getResource().getStatus() != 8) {
+      vtmpl = VappTemplate.getVappTemplateByReference(vcloudClient, vtmpl.getReference());
       System.out.println("Verifying if vmdkFile is uploaded...");
       Thread.sleep(500);
     }
