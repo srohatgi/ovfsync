@@ -2,6 +2,7 @@ package catalog;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.KeyManagementException;
@@ -34,8 +35,12 @@ import edu.princeton.cs.introcs.StdIn;
  */
 public class Uploader {
 
-  private static VcloudClient vcloudClient;
+  private VcloudClient vcloudClient;
   private static Vdc vdc;
+  
+  public Uploader(VcloudClient vcloudClient) {
+    this.vcloudClient = vcloudClient;
+  }
 
   /**
    * Uploading the ovf package(vapp with 1 blank vm) as a vapp template.
@@ -50,7 +55,7 @@ public class Uploader {
    * @throws IOException
    * @throws InterruptedException
    */
-  public static VappTemplate uploadVappTemplate(String name,
+  public VappTemplate uploadVappTemplate(String name,
       String desc, String vmdkFilename, InputStream ovfStream, InputStream vmdkStream)
       throws VCloudException, IOException, InterruptedException {
 
@@ -92,7 +97,7 @@ public class Uploader {
    * @param vAppTemplateName
    * @throws VCloudException
    */
-  private static void addVappTemplateToCatalog(ReferenceType catalogRef,
+  private void addVappTemplateToCatalog(ReferenceType catalogRef,
       VappTemplate tmpl, String name, String desc) throws VCloudException {
 
     if (catalogRef == null) {
@@ -119,7 +124,7 @@ public class Uploader {
    * @throws VCloudException
    * @throws TimeoutException
    */
-  private static void createVapp(VappTemplate vtmpl, String vAppName, String vmName,
+  private void createVapp(VappTemplate vtmpl, String vAppName, String vmName,
       Integer noOfBlankVms) throws VCloudException, TimeoutException {
     ComposeVAppParamsType composeVAppParamsType = new ComposeVAppParamsType();
     composeVAppParamsType.setName(vAppName);
@@ -159,10 +164,7 @@ public class Uploader {
    * @throws KeyStoreException
    * @throws InterruptedException
    */
-  public static void main(String args[]) throws VCloudException,
-      KeyManagementException, NoSuchAlgorithmException, IOException,
-      InstantiationException, IllegalAccessException, TimeoutException,
-      UnrecoverableKeyException, KeyStoreException, InterruptedException {
+  public static void main(String args[]) {
 
     if (args.length < 6) {
       System.err.println("USAGE");
@@ -189,30 +191,39 @@ public class Uploader {
     System.out.println("Blank VM's Sample");
     System.out.println("-----------------");
     
-    ReferenceType catalogRef = setupVCloudParams(vCloudUrl, username, password,
-        orgName, vdcName, catalogName);
+    try {
+      VcloudClient vc = buildVCloudClient(vCloudUrl, username, password);
+      
+      Uploader u = new Uploader(vc);
+      
+      ReferenceType catalogRef = u.setupVCloudParams(orgName, vdcName, catalogName);
 
-    // upload vapptemplate
-    while (StdIn.hasNextLine()) {
-      String name = StdIn.readString();
-      String ovfLoc = StdIn.readString();
-      String vmdkLoc = StdIn.readString();
-      String desc = StdIn.readString();
-      InputStream ovfStream = null, vmdkStream = null;
-      
-      try {
-        ovfStream = new FileInputStream(new File(ovfLoc));
-        vmdkStream = new FileInputStream(new File(vmdkLoc));
-        VappTemplate vtmpl = uploadVappTemplate(name, desc, vmdkLoc, ovfStream, vmdkStream);
-        addVappTemplateToCatalog(catalogRef, vtmpl, name, desc);        
-      } finally {
-        if (ovfStream!=null)
-          ovfStream.close();
-        if (vmdkStream!=null)
-          vmdkStream.close();
+      // upload vapptemplate
+      while (StdIn.hasNextLine()) {
+        String name = StdIn.readString();
+        String ovfLoc = StdIn.readString();
+        String vmdkLoc = StdIn.readString();
+        String desc = StdIn.readString();
+        InputStream ovfStream = null, vmdkStream = null;
+        
+        try {
+          ovfStream = new FileInputStream(new File(ovfLoc));
+          vmdkStream = new FileInputStream(new File(vmdkLoc));
+          VappTemplate vtmpl = u.uploadVappTemplate(name, desc, vmdkLoc, ovfStream, vmdkStream);
+          u.addVappTemplateToCatalog(catalogRef, vtmpl, name, desc);        
+        } finally {
+          if (ovfStream!=null)
+            ovfStream.close();
+          if (vmdkStream!=null)
+            vmdkStream.close();
+        }
+        
       }
-      
-    }
+    } catch (Exception e) {
+      e.printStackTrace();
+      System.err.println("Error");
+      System.exit(1);
+    } 
 
     /****
      * VERIFICATION // creating vapp with the specified no of blank vm's.
@@ -231,20 +242,12 @@ public class Uploader {
      */
   }
 
-  private static ReferenceType setupVCloudParams(String vCloudUrl,
-      String username, String password, String orgName, String vdcName,
+  private ReferenceType setupVCloudParams(String orgName, String vdcName,
       String catalogName) throws KeyManagementException,
       UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException {
     ReferenceType catalogRef = null;
 
     try {
-
-      vcloudClient = new VcloudClient(vCloudUrl, Version.V5_1);
-      // change log levels if needed.
-      VcloudClient.setLogLevel(Level.ALL);
-      vcloudClient.registerScheme("https", 443, FakeSSLSocketFactory.getInstance());
-      //System.out.println("---------" + username + password);
-      vcloudClient.login(username, password);
 
       // find org
       Organization org = Organization.getOrganizationByReference(vcloudClient,
@@ -268,5 +271,21 @@ public class Uploader {
       System.exit(1);
     }
     return catalogRef;
+  }
+
+  public static VcloudClient buildVCloudClient(String vCloudUrl, String username,
+      String password) throws KeyManagementException,
+      UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException,
+      VCloudException {
+
+    VcloudClient vcloudClient = new VcloudClient(vCloudUrl, Version.V5_1);
+
+    // change log levels if needed.
+    VcloudClient.setLogLevel(Level.ALL);
+    vcloudClient.registerScheme("https", 443, FakeSSLSocketFactory.getInstance());
+    //System.out.println("---------" + username + password);
+
+    vcloudClient.login(username, password);
+    return vcloudClient;
   }
 }
