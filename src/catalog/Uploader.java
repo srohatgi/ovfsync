@@ -74,8 +74,7 @@ public class Uploader {
         vtmpl.getReference());
 
     // waiting until the vapptemplate gets resolved.
-    while (vtmpl.getResource().getStatus() != 8
-        && !vtmpl.getResource().isOvfDescriptorUploaded()) {
+    while (!vtmpl.getResource().isOvfDescriptorUploaded()) {
       System.out.println("Verifying if ovfFile is uploaded..");
       Thread.sleep(500);
     }
@@ -171,7 +170,7 @@ public class Uploader {
       System.err.println("USAGE");
       System.err.println("-----");
       System.err
-          .println("Uploader <username> <password> <orgName> <vdcName> <existingCatalogName>");
+          .println("Uploader <vcloudUrl> <username> <password> <orgName> <vdcName> <existingCatalogName>");
       System.exit(1);
     }
 
