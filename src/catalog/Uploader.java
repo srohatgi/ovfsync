@@ -10,7 +10,6 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.util.concurrent.TimeoutException;
-import java.util.logging.Level;
 
 import com.vmware.vcloud.api.rest.schema.CatalogItemType;
 import com.vmware.vcloud.api.rest.schema.ComposeVAppParamsType;
@@ -25,8 +24,6 @@ import com.vmware.vcloud.sdk.Vapp;
 import com.vmware.vcloud.sdk.VappTemplate;
 import com.vmware.vcloud.sdk.VcloudClient;
 import com.vmware.vcloud.sdk.Vdc;
-import com.vmware.vcloud.sdk.constants.Version;
-import com.vmware.vcloud.sdk.samples.FakeSSLSocketFactory;
 
 import edu.princeton.cs.introcs.StdIn;
 
@@ -37,7 +34,6 @@ public class Uploader {
 
   private VcloudClient vcloudClient;
   private Vdc vdc;
-  private Organization org;
   private Object catalogRef;
   
   public Uploader(VcloudClient vcloudClient) {
@@ -78,7 +74,7 @@ public class Uploader {
     
     while (!vtmpl.getResource().isOvfDescriptorUploaded()) {
       vtmpl = VappTemplate.getVappTemplateByReference(vcloudClient, vtmpl.getReference());
-      System.out.println("  verifying if ovfFile is uploaded...");
+      System.out.println("  waiting for ovfFile to be processed...");
       Thread.sleep(500);
     }
     
@@ -91,7 +87,7 @@ public class Uploader {
     // waiting until the vapptemplate gets resolved.
     while (vtmpl.getResource().getStatus() != 8) {
       vtmpl = VappTemplate.getVappTemplateByReference(vcloudClient, vtmpl.getReference());
-      System.out.println("  verifying if vmdkFile is uploaded...");
+      System.out.println("  waiting for vmdkFile  to be processed...");
       Thread.sleep(500);
     }
     System.out.println("FINISHED upload vmdkFile");
@@ -199,11 +195,13 @@ public class Uploader {
     */
     
     try {
-      VcloudClient vc = buildVCloudClient(vCloudUrl, username, password);
+      VcloudAdapter vca = new VcloudAdapter(vCloudUrl, username, password);
       
-      Uploader u = new Uploader(vc);
+      vca.setupVCloudParams(orgName, vdcName, catalogName);
       
-      u.setupVCloudParams(orgName, vdcName, catalogName);
+      Uploader u = new Uploader(vca.getVcloudClient());
+      u.vdc = vca.getVdc();
+      u.catalogRef = vca.getCatalogRef();
 
       // upload vapptemplate
       while (StdIn.hasNextLine()) {
@@ -255,49 +253,5 @@ public class Uploader {
      */
   }
 
-  private void setupVCloudParams(String orgName, String vdcName,
-      String catalogName) throws KeyManagementException,
-      UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException {
-    catalogRef = null;
 
-    try {
-
-      // find org
-      org = Organization.getOrganizationByReference(vcloudClient,
-          vcloudClient.getOrgRefByName(orgName));
-      System.out.println("Organization :: " + org.getReference().getName());
-  
-      // find vdc
-      vdc = Vdc.getVdcByReference(vcloudClient, org.getVdcRefByName(vdcName));
-      System.out.println("Vdc :: " + vdc.getReference().getName());
-  
-      // find catalog
-      for (ReferenceType reference : org.getCatalogRefs()) {
-        if (reference.getName().equals(catalogName)) {
-          catalogRef = reference;
-          break;
-        }
-      }
-      
-    } catch (VCloudException vcex) {
-      System.err.println("Error communicating:" + vcex.getMessage());
-      System.exit(1);
-    }
-  }
-
-  public static VcloudClient buildVCloudClient(String vCloudUrl, String username,
-      String password) throws KeyManagementException,
-      UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException,
-      VCloudException {
-
-    VcloudClient vcloudClient = new VcloudClient(vCloudUrl, Version.V5_1);
-
-    // change log levels if needed.
-    VcloudClient.setLogLevel(Level.WARNING);
-    vcloudClient.registerScheme("https", 443, FakeSSLSocketFactory.getInstance());
-    //System.out.println("---------" + username + password);
-
-    vcloudClient.login(username, password);
-    return vcloudClient;
-  }
 }
