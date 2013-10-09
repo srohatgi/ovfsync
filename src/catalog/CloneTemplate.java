@@ -35,7 +35,7 @@ public class CloneTemplate {
       System.err.println("USAGE");
       System.err.println("-----");
       System.err
-          .println("Uploader <vcloudUrl> <username> <password> <orgName> <vdcName> <existingCatalogName>");
+          .println("CloneTemplate <vcloudUrl> <username> <password> <orgName> <vdcName> <fromCatalogName>");
       System.exit(1);
     }
 
@@ -45,7 +45,7 @@ public class CloneTemplate {
 
     String orgName = args[3];
     String vdcName = args[4];
-    String catalogName = args[5];
+    String fromCatalogName = args[5];
 
     /* testing args
     vCloudUrl = "https://uklo1.symphonycloud.savvis.com";
@@ -56,9 +56,9 @@ public class CloneTemplate {
     
     try {
       VcloudAdapter vca = new VcloudAdapter(vCloudUrl, username, password);
-      vca.setupVCloudParams(orgName, vdcName, catalogName);
+      vca.setupVCloudParams(orgName, vdcName, fromCatalogName);
       vcloudClient = vca.getVcloudClient();
-
+      
       
       // upload vapptemplate
       while (StdIn.hasNextLine()) {
@@ -67,11 +67,11 @@ public class CloneTemplate {
         String destinationCatalog = vals[1];
 
         // find the vapp template ref
-        ReferenceType soruceVappTemplateRef = findVappTemplateRef(orgName, vdcName, name);
+        ReferenceType sourceVappTemplateRef = findVappTemplateRef(orgName, vdcName, name);
         CloneVAppTemplateParamsType cloneParams = new CloneVAppTemplateParamsType();
-        cloneParams.setDescription("public tempalte");
+        cloneParams.setDescription("public template");
         cloneParams.setName(name);
-        cloneParams.setSource(soruceVappTemplateRef);
+        cloneParams.setSource(sourceVappTemplateRef);
         
         Catalog destinationCatalogRef = searchCatalog(orgName, destinationCatalog);
         
